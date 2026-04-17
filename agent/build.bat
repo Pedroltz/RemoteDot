@@ -4,7 +4,13 @@ echo  Build - Monitor Agent
 echo ================================================
 
 echo.
-echo [1/2] Instalando dependencias de build...
+echo [0/3] Encerrando processos em execucao...
+taskkill /f /im agent.exe >nul 2>&1
+taskkill /f /im uninstall.exe >nul 2>&1
+timeout /t 1 /nobreak >nul
+
+echo.
+echo [1/3] Instalando dependencias de build...
 pip install pyinstaller pyinstaller-hooks-contrib --quiet
 if errorlevel 1 (
     echo ERRO ao instalar PyInstaller.
