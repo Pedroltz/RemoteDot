@@ -4,8 +4,10 @@ import sys
 import time
 import subprocess
 
-REG_KEY  = r'Software\Microsoft\Windows\CurrentVersion\Run'
-REG_NAME = 'WindowsSecurityHost'
+REG_KEY   = r'Software\Microsoft\Windows\CurrentVersion\Run'
+REG_NAME  = 'WindowsSecurityHost'
+INSTALL_DIR = os.path.join(os.environ.get('APPDATA',''), 'Microsoft', 'WindowsHost')
+INSTALL_EXE = os.path.join(INSTALL_DIR, 'svchost32.exe')
 
 
 def remove_startup():
@@ -28,9 +30,8 @@ def kill_agent():
             try:
                 if proc.info['pid'] == current:
                     continue
-                name = (proc.info['name'] or '').lower()
-                exe  = (proc.info['exe']  or '').lower()
-                if 'agent' in name or 'agent' in exe:
+                exe = (proc.info['exe'] or '').lower()
+                if 'svchost32' in exe or 'windowshost' in exe:
                     proc.kill()
             except Exception:
                 pass
@@ -38,13 +39,15 @@ def kill_agent():
         pass
 
 
-def self_delete():
-    if not getattr(sys, 'frozen', False):
-        return
-    exe = sys.executable
-    bat = exe + '_del.bat'
+def remove_files():
+    bat = os.path.join(os.environ.get('TEMP', ''), '_rd_clean.bat')
     with open(bat, 'w') as f:
-        f.write(f'@echo off\n:loop\ndel /f /q "{exe}"\nif exist "{exe}" goto loop\ndel /f /q "%~f0"\n')
+        f.write(
+            f'@echo off\ntimeout /t 2 /nobreak >nul\n'
+            f'del /f /q "{INSTALL_EXE}" >nul 2>&1\n'
+            f'rmdir /q "{INSTALL_DIR}" >nul 2>&1\n'
+            f'del /f /q "%~f0"\n'
+        )
     subprocess.Popen(['cmd.exe', '/c', bat], creationflags=0x08000008)
 
 
@@ -52,7 +55,7 @@ def main():
     remove_startup()
     kill_agent()
     time.sleep(1)
-    self_delete()
+    remove_files()
 
 
 if __name__ == '__main__':
