@@ -1398,8 +1398,10 @@
     if(data.data){dl.chunks.push(data.data); dl.bytes+=data.data.length*.75; xShow(data.requestId,dl.name,-1,fmtSz(Math.round(dl.bytes))+' recebidos');}
     if(data.done){
       const blob=b64Blob(dl.chunks.join(''),'application/octet-stream');
-      const a=document.createElement('a'); a.href=blob; a.download=dl.name; a.click();
-      URL.revokeObjectURL(blob); delete dlCh[data.requestId];
+      const a=document.createElement('a'); a.href=blob; a.download=dl.name;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(()=>URL.revokeObjectURL(blob), 10000);
+      delete dlCh[data.requestId];
       xShow(data.requestId,dl.name,100,'✓ Concluído');
       setTimeout(()=>xHide(data.requestId),3000);
     }
@@ -1466,9 +1468,11 @@
         psInp.value = tabState.completions[tabState.index];
       } else if (!tabState.pending) {
         tabState.pending = true;
+        const rawPrm = psPrm.textContent.replace(/^PS\s+/,'').replace(/\s*[›>]\s*$/,'').trim();
         socket.emit('dash:ps:complete', {
           clientId: selectedAgent, sessionId: PS_SID,
           input: psInp.value, cursor: psInp.selectionStart,
+          cwd: rawPrm,
           requestId: genId()
         });
       }

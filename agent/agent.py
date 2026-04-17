@@ -507,6 +507,7 @@ def on_ps_complete(data):
     input_text  = data.get('input', '')
     cursor_pos  = data.get('cursor', len(input_text))
     request_id  = data.get('requestId', '')
+    cwd         = data.get('cwd') or None
 
     try:
         escaped = input_text.replace("'", "''")
@@ -520,7 +521,8 @@ def on_ps_complete(data):
             ['powershell.exe', '-NoProfile', '-NonInteractive',
              '-EncodedCommand', encoded],
             capture_output=True, text=True, timeout=5,
-            creationflags=subprocess.CREATE_NO_WINDOW
+            creationflags=subprocess.CREATE_NO_WINDOW,
+            cwd=cwd if (cwd and os.path.isdir(cwd)) else None
         )
         completions = [
             line.strip()
