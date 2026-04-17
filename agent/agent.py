@@ -20,9 +20,9 @@ if getattr(sys, 'frozen', False):
     sys.stdout = open(os.devnull, 'w')
     sys.stderr = open(os.devnull, 'w')
 
-# --- Config: env var > config.ini ao lado do exe > padrão ---
+# --- Config: env var > config.ini embutido/ao lado do exe > padrão ---
 if getattr(sys, 'frozen', False):
-    _BASE = os.path.dirname(sys.executable)
+    _BASE = sys._MEIPASS  # pasta temporária com arquivos embutidos
 else:
     _BASE = os.path.dirname(os.path.abspath(__file__))
 

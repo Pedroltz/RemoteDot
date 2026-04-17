@@ -6,7 +6,7 @@ a = Analysis(
     ['agent.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[('config.ini', '.')],
     hiddenimports=[
         # pynput Windows backend
         'pynput.keyboard._win32',
